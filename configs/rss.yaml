@@ -1,0 +1,47 @@
+# NetNewsWire / OPML flow: archive new RSS entries -> ollama summary -> email
+# Point rss.opml_path at your NetNewsWire export (File > Export Subscriptions).
+#   newsflow -c configs/rss.yaml collect-opml     # run from cron, e.g. every 30 min
+#   newsflow -c configs/rss.yaml brief --source rss
+data_dir: ../data
+
+rss:
+  opml_path: subscriptions.opml        # resolved relative to this config file
+  archive_dir: rss_archive
+  state_path: state/rss_archiver.json
+  archive_initial: false                # set true to archive existing entries on first run
+  max_seen_per_feed: 1000
+  user_agent: newsflow-opml-archiver/1.0 (+personal-use)
+
+llm:
+  backend: ollama
+  model: gemma4:12b
+  url: http://localhost:11434/api/chat
+  timeout: 600
+  prompt: >-
+    Summarize the following mixed {lang1} and {lang2} text using {lang2}.
+    Use bullet points and format output as HTML. Limit the context to the
+    provided sources and avoid diluting the original content.
+    {text}
+
+brief:
+  source: rss
+  input_pattern: rss_archive/feed-items-{date}.txt
+  output_pattern: rss_archive/summary_rss.txt
+  clear_input_after_success: true
+  lang_map:
+    rss: Russian
+  target_lang: English
+
+email:
+  enabled: true
+  backend: smtp
+  smtp_host: smtp.gmail.com
+  smtp_port: 587
+  starttls: true
+  username: ${SMTP_USERNAME}
+  password: ${SMTP_PASSWORD}
+  from_addr: ${SMTP_FROM}
+  to:
+    - ${EMAIL_TO}
+  subject: "RSS Feeds Daily Briefing"
+  intro: "Here is the summary of the RSS feeds:"

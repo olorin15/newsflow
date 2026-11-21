@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "newsflow"
+version = "0.1.0"
+description = "Configurable personal news pipelines: collect from Telegram / RSS / OPML / news search, summarize with local Ollama or cloud LLMs, deliver by email, Medium or Substack."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "requests>=2.31",
+    "pyyaml>=6.0",
+    "pydantic>=2.5",
+    "python-dotenv>=1.0",
+    "feedparser>=6.0",
+]
+
+[project.optional-dependencies]
+# Telegram monitoring + Telegram-to-RSS server
+telegram = [
+    "telethon>=1.36",
+    "fastapi>=0.110",
+    "uvicorn>=0.29",
+    "aiosqlite>=0.20",
+    "feedgen>=0.9",
+]
+# Mistral cloud backend
+mistral = ["mistralai>=1.0"]
+# Substack notes publisher (install the client that provides the `substack` module,
+# e.g. `pip install python-substack`)
+publish = []
+all = [
+    "newsflow[telegram]",
+    "newsflow[mistral]",
+]
+
+[project.scripts]
+newsflow = "newsflow.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

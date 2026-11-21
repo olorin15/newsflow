@@ -1,0 +1,73 @@
+# Telegram "ru" flow: monitor channels -> telega ru file -> ollama summary -> email
+# Secrets come from env vars / .env (see .env.example). Run:
+#   newsflow -c configs/telegram_ru.yaml collect-telegram --set ru   # long-running
+#   newsflow -c configs/telegram_ru.yaml brief --source telegram --channels ru
+data_dir: ../data
+
+telegram:
+  api_id: ${TELEGRAM_API_ID}
+  api_hash: ${TELEGRAM_API_HASH}
+  phone: ${TELEGRAM_PHONE}
+  session_prefix: telega
+  # Telethon login session lives under data_dir (never the cwd), so session files
+  # from other projects/versions are not picked up by accident:
+  session_pattern: telegram/{session_prefix}_{channels}.session
+  output_pattern: telegram/telega_{channels}.txt
+  channel_sets:
+    ru:
+      - "@ukr_2025_ru"
+      - "@legitimniy"
+      - "@voiceofiran_ru"
+      - "@shuohuaxia"
+    en:
+      - "@southfronteng"
+      - "@geopolitics_prime"
+      - "@nikkeiasia"
+      - "@asianomics"
+      - "@Middle_East_Spectator"
+  # Used by `serve-telegram-rss`:
+  watched_channels:
+    legitimniy: "@legitimniy"
+  rss_db_path: state/telegram_rss.sqlite3
+  server_host: 127.0.0.1
+  server_port: 8000
+
+llm:
+  backend: ollama
+  model: gemma4:12b
+  url: http://localhost:11434/api/chat
+  timeout: 600
+  prompt: >-
+    Summarize the following {lang1} text in {lang2}, using bullet points and
+    formatting output as HTML. Start with the top 5 key takeaways. Limit the
+    context to the provided sources and avoid diluting the original content.
+    {text}
+
+brief:
+  source: telegram
+  channels: ru
+  input_pattern: telegram/telega_{channels}.txt
+  output_pattern: telegram/summary_{channels}.txt
+  clear_input_after_success: true
+  lang_map:
+    ru: Russian
+    en: English
+  target_lang: Russian
+
+email:
+  enabled: true
+  backend: smtp            # smtp | sendemail | sendmail
+  smtp_host: smtp.gmail.com
+  smtp_port: 587
+  starttls: true
+  username: ${SMTP_USERNAME}
+  password: ${SMTP_PASSWORD}
+  from_addr: ${SMTP_FROM}
+  to:
+    - ${EMAIL_TO}
+  subject: "{lang} Telegram Channels Daily Briefing"
+  intro: "Here is the summary of the Telegram channel messages:"
+
+medium:                    # used with `brief --publish`
+  token: ${MEDIUM_TOKEN:-}
+  user_id: ${MEDIUM_USER_ID:-}

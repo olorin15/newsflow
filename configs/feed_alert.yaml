@@ -1,0 +1,16 @@
+# Single-feed alerter: email new posts of one Atom/RSS feed.
+#   newsflow -c configs/feed_alert.yaml alert-feed --feed-url "https://eurogenes.blogspot.com/feeds/posts/default"
+data_dir: ../data
+
+email:
+  enabled: true
+  backend: smtp
+  smtp_host: smtp.gmail.com
+  smtp_port: 465
+  smtp_ssl: true                  # port 465 style; set false + starttls for 587
+  username: ${SMTP_USERNAME}
+  password: ${SMTP_PASSWORD}
+  from_addr: ${SMTP_FROM}
+  to:
+    - ${EMAIL_TO}
+  subject: "New posts"

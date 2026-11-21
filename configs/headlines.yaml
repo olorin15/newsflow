@@ -1,0 +1,44 @@
+# Headline flow: SerpApi Google News -> text file -> (optionally) summarize+email
+#   newsflow -c configs/headlines.yaml collect-serp
+#   newsflow -c configs/headlines.yaml brief --source file --input ../data/headlines/<date>.txt
+data_dir: ../data
+
+news_search:
+  serp_api_key: ${SERP_API_KEY}
+  query: "site:allsides.com OR site:san.com OR site:insiderpaper.com OR site:ground.news"
+  source_map:                      # link substring -> label, checked in order
+    allsides.com: AllSides
+    san.com: SAN
+    insiderpaper.com: InsiderPaper
+    ground.news: Ground.News
+  output_pattern: headlines/{date}.txt
+
+llm:
+  backend: mistral                # original flow used Mistral for this one
+  model: mistral-small-latest
+  mistral_api_key: ${MISTRAL_API_KEY}
+  prompt: >-
+    Summarize the following text using bullet points and format output as HTML:
+    {text}
+
+brief:
+  source: file
+  input_pattern: headlines/{date}.txt
+  output_pattern: headlines/summary-{date}.txt
+  clear_input_after_success: false
+  lang_map:
+    file: English
+  target_lang: English
+
+email:
+  enabled: true
+  backend: smtp
+  smtp_host: smtp.gmail.com
+  smtp_port: 587
+  starttls: true
+  username: ${SMTP_USERNAME}
+  password: ${SMTP_PASSWORD}
+  from_addr: ${SMTP_FROM}
+  to:
+    - ${EMAIL_TO}
+  subject: "Unbiased News Daily Briefing"
